@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: ./BE
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongo
+    environment:
+      - PORT=3000
+      - MONGO_URI=mongodb://mongo:27017/mydatabase
+
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  nginx:
+    build:
+      context: ./GameService  # Đảm bảo thư mục này chứa Dockerfile và các tệp HTML
+    ports:
+      - "80:80"
+    depends_on:
+      - app  # Đảm bảo app được khởi chạy trước nginx
+
+volumes:
+  mongo-data:
