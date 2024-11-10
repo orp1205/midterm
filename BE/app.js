@@ -2,11 +2,14 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
+const multer = require('multer');
 const path = require("path"); // Import path module
 const User = require("./models/User"); // Ensure you have the User model imported
 const app = express();
+const upload = multer();
 
-app.use(express.json());
+app.use(express.urlencoded({ extended: true }));  // For URL-encoded form data
+// app.use(express.json());  // For JSON data (if your form sends JSON)
 app.use(express.static(path.join(__dirname, '../GameService'))); // Serve static HTML files
 
 // Kết nối tới MongoDB
@@ -40,19 +43,34 @@ app.get("/login", (req, res) => {
   res.redirect("/login.html");
 });
 
-// Login route
-app.post("/login", async (req, res) => {
-  const { username, password } = req.body;
-  const user = await User.findOne({ username });
-  if (!user) {
-    return res.status(400).send("Invalid username or password");
-  }
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) {
-    return res.status(400).send("Invalid username or password");
-  }
-  res.redirect("/index.html"); 
-});
+app.post("/api/register", upload.none(), async (req, res) => {
+    const { username, password } = req.body;
+    console.log(username);
+    console.log(password);
+    
+    const hashedPassword = await bcrypt.hash(password, 10); // Hash the password
+    
+    const user = new User({ username, password: hashedPassword }); // Create a new user
+    await user.save(); // Save the user to the database
+    res.redirect("http://localhost:8080/login.html");  // Send success response
+  });
+  // Login route
+  app.post("/api/login", upload.none(), async (req, res) => {
+    const body = req.body;
+    console.log(body);
+    const { username, password } = req.body;
+    console.log(username);
+    console.log(password);
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(400).send("Invalid username or password");
+    }
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).send("Invalid username or password");
+    }
+    res.redirect("http://localhost:8080/index.html"); 
+  });
 
 // Khởi động server
 const PORT = process.env.PORT || 80;
